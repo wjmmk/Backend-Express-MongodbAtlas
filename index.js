@@ -134,6 +134,7 @@ const unknownEndpoint = (request, response) => {
 }
 
 app.use(unknownEndpoint)
+app.use(express.static('build'))
 //**** MiddleWare */
 
 const PORT = process.env.PORT || 3001
