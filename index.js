@@ -1,6 +1,22 @@
 const express = require("express");
 const app = express();
 
+//**** MiddleWare */
+var options = {
+  dotfiles: 'ignore',
+  etag: false,
+  extensions: ['htm', 'html'],
+  index: false,
+  maxAge: '1d',
+  redirect: false,
+  setHeaders: function (res, path, stat) {
+    res.set('x-timestamp', Date.now())
+  }
+}  
+
+app.use(express.static('build', options))
+//**** MiddleWare */
+
 app.use(express.json())
 
 const generateId = () => {
@@ -134,7 +150,6 @@ const unknownEndpoint = (request, response) => {
 }
 
 app.use(unknownEndpoint)
-app.use(express.static('build'))
 //**** MiddleWare */
 
 const PORT = process.env.PORT || 3001
