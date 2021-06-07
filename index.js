@@ -1,158 +1,135 @@
 const express = require("express");
 const app = express();
 
-//**** MiddleWare */
+require("dotenv").config();
+const Note = require("./models/note");
+
+const mongoose = require("mongoose");
+const url = process.env.MONGODB_URI;
+mongoose.connect(url, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false,
+  useCreateIndex: true,
+});
+
+const noteSchema = new mongoose.Schema({
+  content: String,
+  date: Date,
+  important: Boolean,
+});
+
+//**** MiddleWare Para Manejar Archivos Static.*/
 var options = {
-  dotfiles: 'ignore',
+  dotfiles: "ignore",
   etag: false,
-  extensions: ['htm', 'html'],
+  extensions: ["htm", "html"],
   index: false,
-  maxAge: '1d',
+  maxAge: "1d",
   redirect: false,
   setHeaders: function (res, path, stat) {
-    res.set('x-timestamp', Date.now())
-  }
-}  
+    res.set("x-timestamp", Date.now());
+  },
+};
 
-app.use(express.static('build', options))
+//**** MiddleWare */
+app.use(express.static("build", options));
+app.use(express.json());
+const requestLogger = (request, response, next) => {
+  console.log("Method:", request.method);
+  console.log("Path:  ", request.path);
+  console.log("Body:  ", request.body);
+  console.log("---");
+  next();
+};
+app.use(requestLogger);
 //**** MiddleWare */
 
-app.use(express.json())
+// Inserta una nota en la DB.
+app.post("/api/notes", (request, response, next) => {
+  const body = request.body;
 
-const generateId = () => {
-  const maxId = notes.length > 0
-    ? Math.max(...notes.map(n => n.id))
-    : 0
-  return maxId + 1
-}
-
-app.post('/api/notes', (request, response) => {
-  const body = request.body
-
-  if (!body.content) {
-    return response.status(400).json({ 
-      error: 'content missing' 
-    })
+  if (body.content === undefined) {
+    return response.status(400).json({ error: "content missing" });
   }
 
-  const note = {
+  const note = new Note({
     content: body.content,
     important: body.important || false,
     date: new Date(),
-    id: generateId(),
-  }
+  });
 
-  notes = notes.concat(note)
-
-  response.json(note)
-})
-
-//**** MiddleWare */
-const cors = require('cors')
-
-app.use(cors())
-
-//**** MiddleWare */
-
-const requestLogger = (request, response, next) => {
-  console.log('Method:', request.method)
-  console.log('Path:  ', request.path)
-  console.log('Body:  ', request.body)
-  console.log('---')
-  next()
-}
-
-app.use(requestLogger)
-//**** MiddleWare */
-
-
-let notes = [
-  {
-    "id": 1,
-    "content": "HTML is easy",
-    "date": "2020-01-10T17:30:31.098Z",
-    "important": true
-  },
-  {
-    "id": 2,
-    "content": "Browser can execute only Javascript",
-    "date": "2020-01-10T18:39:34.091Z",
-    "important": false
-  },
-  {
-    "id": 3,
-    "content": "GET and POST are the most important methods of HTTP protocol",
-    "date": "2020-01-10T19:20:14.298Z",
-    "important": true
-  },
-  {
-    "content": "NO ONE stops us",
-    "date": "2020-01-10T19:20:14.298Z",
-    "important": false,
-    "id": 4
-  },
-  {
-    "content": "We Keep Try",
-    "date": "2021-05-28T13:25:07.941Z",
-    "important": false,
-    "id": 5
-  },
-  {
-    "content": "Como es pues",
-    "date": "2021-05-28T15:52:09.059Z",
-    "important": true,
-    "id": 6
-  },
-  {
-    "content": "Hola Bebé",
-    "date": "2021-05-28T15:52:43.971Z",
-    "important": true,
-    "id": 7
-  },
-  {
-    "content": "Les't Go",
-    "date": "2021-06-03T19:07:00.099Z",
-    "important": true,
-    "id": 8
-  }
-];
-
-
-app.get("/", (req, res) => {
-  res.send("<h1>Hello World!</h1>");
+  note.save().then(savedNote => savedNote.toJSON())
+  .then(savedAndFormattedNote => {
+    response.json(savedAndFormattedNote)
+  }).catch(error => next(error))
 });
 
-app.get("/api/notes", (req, res) => {
-  res.json(notes);
+//**** MiddleWare */
+const cors = require("cors");
+
+app.use(cors());
+
+app.get("/", (request, response) => {
+  response.send("<h1>Welcome to Web Server !!!</h1>");
 });
 
-app.get("/api/notes/:id", (request, response) => {
-  const id = Number(request.params.id)
-  const note = notes.find(note => note.id === id)
+app.get("/api/notes", (request, response) => {
+  Note.find({}).then((notes) => {
+    response.json(notes);
+  });
+});
 
-  if (note) {
-    response.json(note)
-  } else {
-    response.status(404).end()
+app.get("/api/notes/:id", (request, response, next) => {
+  Note.findById(request.params.id)
+    .then((note) => {
+      if (note) {
+        response.json(note);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch((error) => next(error));
+});
+
+app.delete("/api/notes/:id", (request, response) => {
+  Note.findByIdAndRemove(request.params.id)
+  .then(result => {
+    response.status(204).end()
+    console.log(result)
+  })
+  .catch(error => next(error))
+});
+
+app.put('/api/notes/:id', (request, response, next) => {
+  const body = request.body
+
+  const note = {
+    content: body.content,
+    important: body.important,
   }
-})
 
-app.delete('/api/notes/:id', (request, response) => {
-  const id = Number(request.params.id)
-  notes = notes.filter(note => note.id !== id)
-
-  response.status(204).end()
+  Note.findByIdAndUpdate(request.params.id, note, { new: true })
+    .then(updatedNote => {
+      response.json(updatedNote)
+    })
+    .catch(error => next(error))
 })
 
 //**** MiddleWare Para el Manejo de Errores*/
-const unknownEndpoint = (request, response) => {
-  response.status(404).send({ error: 'unknown endpoint' })
-}
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message);
 
-app.use(unknownEndpoint)
+  if (error.name === "CastError") {
+      return response.status(400).send({ error: "malformatted id" });
+  } else if (error.name === "ValidationError") {
+      return response.status(400).json({ error: error.message }); }
+  next(error);
+}
+app.use(errorHandler);
 //**** MiddleWare */
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
