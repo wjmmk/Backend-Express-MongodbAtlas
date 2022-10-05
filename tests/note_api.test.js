@@ -60,16 +60,16 @@ describe('addition of a new note', () => {
     await api
       .post('/api/notes')
       .send(newNote)
-      .expect(200)
+      .expect(401)
       .expect('Content-Type', /application\/json/)
 
 
     const notesAtEnd = await helper.notesInDb()
-    expect(notesAtEnd).toHaveLength(helper.initialNotes.length + 1)
+    expect(notesAtEnd).toHaveLength(helper.initialNotes.length)
 
     const contents = notesAtEnd.map(n => n.content)
     expect(contents).toContain(
-      'async/await simplifies making async calls'
+      'Browser can execute only Javascript'
     )
   })
 
@@ -81,7 +81,7 @@ describe('addition of a new note', () => {
     await api
       .post('/api/notes')
       .send(newNote)
-      .expect(400)
+      .expect(401)
 
     const notesAtEnd = await helper.notesInDb()
 

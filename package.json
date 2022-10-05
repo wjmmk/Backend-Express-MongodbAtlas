@@ -10,7 +10,8 @@
     "deploy": "git push heroku main",
     "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push && npm run deploy",
     "logs:prod": "heroku logs --tail",
-    "test": "cross-env NODE_ENV=test jest --verbose --runInBand"
+    "test": "cross-env NODE_ENV=test jest --verbose --silent",
+    "test2": "cross-env NODE_ENV=test jest --verbose --runInBand"
   },
   "author": "WjmmK",
   "license": "MIT",
