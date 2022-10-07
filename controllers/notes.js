@@ -11,16 +11,12 @@ notesRouter.get('/', async (request, response) => {
 })
 
 notesRouter.get('/:id', async (request, response, next) => {
-  try{
     const note = await Note.findById(request.params.id)
     if (note) {
       response.json(note.toJSON())
     } else {
       response.status(404).end()
     }
-  } catch(exception) {
-    next(exception)
-  }
 })
 
 // Esta Funcion Administra el Token para generar nuevas notas.
@@ -35,32 +31,29 @@ const getTokenFrom = request => {
 notesRouter.post('/', async (request, response, next) => {
   const body = request.body
 
-  const token = getTokenFrom(request)
+  /* const token = getTokenFrom(request)
   const decodedToken = jwt.verify(token, process.env.SECRET)
   
   if (!token || !decodedToken.id) {
     return response.status(401).json({ error: 'token missing or invalid' })
-  }
-  const user = await User.findById(decodedToken.id)
-
-  const note = new Note({
+  }*/
+  const user = User.findById(body.userId)
+  console.log(user)
+  const note = new Note({ 
     content: body.content,
-    important: body.important === undefined ? false : body.important,
     date: new Date(),
-    user: user._id
+    important: body.important === undefined ? false : body.important,
+    user: body.userId
   })
 
-  try { 
     const savedNote = await note.save()
-
+    console.log(savedNote)
+    
     //Datos del Modelo User.
-    user.notes = user.notes.concat(savedNote._id)
+    user.notes = user.notes.concat(savedNote.user)
     await user.save()
-
-    response.json(savedNote.toJSON())
-  } catch(exception) {
-    next(exception)
-  }
+   // next() 
+    response.json(savedNote)
 })
 
 notesRouter.put('/:id', (request, response, next) => {
@@ -79,12 +72,8 @@ notesRouter.put('/:id', (request, response, next) => {
 })
 
 notesRouter.delete('/:id', async (request, response, next) => {
-  try {
     await Note.findByIdAndRemove(request.params.id)
     response.status(204).end()
-  } catch (exception) {
-    next(exception)
-  }
 })
 
 module.exports = notesRouter

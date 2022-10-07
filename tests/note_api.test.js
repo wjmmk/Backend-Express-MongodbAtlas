@@ -1,5 +1,5 @@
-const supertest = require('supertest')
 const mongoose = require('mongoose')
+const supertest = require('supertest')
 const helper = require('./test_helper')
 const app = require('../app')
 const api = supertest(app)
@@ -8,11 +8,40 @@ const Note = require('../models/note')
 
 beforeEach(async () => {
   await Note.deleteMany({})
-  
-  const noteObjects = helper.initialNotes.map(note => new Note(note))
+
+  const noteObjects = helper.initialNotes
+    .map(note => new Note(note))
   const promiseArray = noteObjects.map(note => note.save())
-  
   await Promise.all(promiseArray)
+})
+
+afterAll(() => {
+  mongoose.connection.close()
+})
+
+describe('when there is initially some notes saved', () => {
+  test('notes are returned as json', async () => {
+    await api
+      .get('/api/notes')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+  })
+
+  test('all notes are returned', async () => {
+    const response = await api.get('/api/notes')
+
+    expect(response.body).toHaveLength(helper.initialNotes.length)
+  })
+
+  test('a specific note is within the returned notes', async () => {
+    const response = await api.get('/api/notes')
+
+    const contents = response.body.map(r => r.content)
+
+    expect(contents).toContain(
+      'Browser can execute only Javascript'
+    )
+  })
 })
 
 describe('viewing a specific note', () => {
@@ -34,7 +63,7 @@ describe('viewing a specific note', () => {
   test('fails with statuscode 404 if note does not exist', async () => {
     const validNonexistingId = await helper.nonExistingId()
 
-    //console.log(validNonexistingId)
+    console.log(validNonexistingId)
 
     await api
       .get(`/api/notes/${validNonexistingId}`)
@@ -73,7 +102,7 @@ describe('addition of a new note', () => {
     )
   })
 
-  test('fails with status code 400 if data invaild', async () => {
+  test('fails with status code 400 if data invalid', async () => {
     const newNote = {
       important: true
     }
@@ -108,8 +137,4 @@ describe('deletion of a note', () => {
 
     expect(contents).not.toContain(noteToDelete.content)
   })
-})
-
-afterAll(() => {
-  mongoose.connection.close()
 })

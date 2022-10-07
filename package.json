@@ -10,8 +10,9 @@
     "deploy": "git push heroku main",
     "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push && npm run deploy",
     "logs:prod": "heroku logs --tail",
-    "test": "cross-env NODE_ENV=test jest --verbose --silent",
-    "test2": "cross-env NODE_ENV=test jest --verbose --runInBand"
+    "test": "cross-env NODE_ENV=test jest --verbose --runInBand",
+    "test2": "cross-env NODE_ENV=test jest note_api.test.js",
+    "test3": "cross-env NODE_ENV=test jest user_api.test.js"
   },
   "author": "WjmmK",
   "license": "MIT",
@@ -33,8 +34,5 @@
   },
   "engines": {
     "node": "14.17.0"
-  },
-  "jest": {
-    "testEnvironment": "node"
   }
 }
